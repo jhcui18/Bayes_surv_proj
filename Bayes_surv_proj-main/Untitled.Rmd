@@ -1,0 +1,30 @@
+---
+title: "Untitled"
+author: "Jinghan Cui"
+date: "11/9/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# survival
+
+$h(t,x)=h_0(t)e^{{\beta}x}$
+
+$t_i$ denotes the observed or censoring time.
+
+$z_1,...,z_p$ denotes the $p$ covariates
+
+$\beta$ denotes the regression coefficients
+
+$R(t_j)$ denotes subjects at risk.
+
+# bayesian
+
+$S_d$ and $h_d$ denote the survival and hazard function of a parametric family $d$
+
+$M_d$ denotes the survival model
+
+$\theta_d = \{\alpha_d,\beta_d\}$
