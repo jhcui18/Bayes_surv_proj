@@ -28,3 +28,4 @@ $S_d$ and $h_d$ denote the survival and hazard function of a parametric family $
 $M_d$ denotes the survival model
 
 $\theta_d = \{\alpha_d,\beta_d\}$
+scacka
