@@ -1,0 +1,135 @@
+---
+title: "bayesian sruvival"
+author: "Ana & Jinghan"
+date: "2022-11-29"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+## Data exploration
+
+In survival analysis, the outcome or dependent variable is the *time to event* where some event times are not observed (IE they are censored). 
+
+Here we consider the more common scenario of *right-censoring*. This is the case where the terminating event is not observed. Observations are instead censored at time `t` .
+
+Our first analysis will treat **overall survival** as the event of interest, as opposed to progression-free survival. In this cohort, the overall survival is described by two variables: `os_status` & `os_months`. 
+
+We will start by inspecting these data.
+```{r}
+which(is.na(MFPS_PNAS_SURVIVAL_DATA))
+sum(is.na(MFPS_PNAS_SURVIVAL_DATA))
+sapply(MFPS_PNAS_SURVIVAL_DATA, function(x) sum(is.na (x)))
+```
+
+
+```{r}
+###MALAWI FAMILY PLANNING STUDY
+###R-SCRIPT 5: SURVIVAL PLOT FILE
+
+###MAHESH KARRA
+###MAY 10, 2022
+
+###STEP 0: SETTING WORKING DIRECTORY
+###To use the correct file directory, replace "C:/Users/mvkarra/Documents/Harvard 2015-2016/POP CENTER/MALAWI FP INTERVENTION/Publications/YEAR 1 ITT ON CONTRACEPTIVE USE/SUBMISSIONS/PNAS/HARVARD DATAVERSE SUBMISSION" with the appropriate file path under which your data is stored.
+###Make sure that the Results subfolder is created to store the results from this analysis.
+###SET WORKING DIRECTORY
+getwd()
+
+
+install.packages(c("ggplot2","haven","survminer","survival"))
+library(ggplot2)
+library(haven)
+library("survminer")
+require("survival")
+
+MFPS_PNAS_SURVIVAL_DATA <- read_dta("MFPS_PNAS_SURVIVAL_DATA.dta")
+View(MFPS_PNAS_SURVIVAL_DATA)
+
+fit <- survfit(Surv(month_next_preg,event_next_preg_24) ~ treatment, data = MFPS_PNAS_SURVIVAL_DATA)
+ggsurvplot(fit, data = MFPS_PNAS_SURVIVAL_DATA, pval = TRUE)
+
+
+###K-M PLOT
+ggsurvplot(
+  fit, 
+  data = MFPS_PNAS_SURVIVAL_DATA, 
+  censor=FALSE,
+  conf.int = TRUE,
+  risk.table = "nrisk_cumevents",
+  risk.table.col = "strata",# Risk table color by groups
+  risk.table.height = 0.3, # Useful to change when you have multiple groups
+  break.time.by = 4,   
+  ylim = c(0.85, 1),
+  xlab = "Months since index birthdate",
+  ylab = "Probability",
+  legend.labs = 
+    c("Control", "Treated"),
+  pval = TRUE
+)
+
+```
+
+Stan Weibull fit
+
+```{r}
+stan_weibull_survival_model_file <- system.file('stan', 'weibull_survival_model.stan', package =  'biostan')
+biostan::print_stan_file(stan_weibull_survival_model_file)
+
+```
+From the data block, observations where events were observed and censored are handled separately. 
+```{r}
+
+stan_weibull_survival_model_code <- biostan::read_stan_file(stan_weibull_survival_model_file)
+biostan::print_stan_code(stan_weibull_survival_model_code, section = "data")
+
+```
+
+```{r}
+stan_weibull_survival_model_data <-
+    list(
+        ## Number of event individuals
+        Nobs = sum(MFPS_PNAS_SURVIVAL_DATA$event_next_preg_24 == 1),
+        ## Number of censored individuals
+        Ncen = sum(MFPS_PNAS_SURVIVAL_DATA$event_next_preg_24 == 0),
+        ## Number of covariates
+        M_bg = 1,
+        ## Times for event individuals
+        yobs = MFPS_PNAS_SURVIVAL_DATA$month_next_preg[MFPS_PNAS_SURVIVAL_DATA$event_next_preg_24 == 1],
+        ## Times for censored individuals
+        ycen = MFPS_PNAS_SURVIVAL_DATA$month_next_preg[MFPS_PNAS_SURVIVAL_DATA$event_next_preg_24 == 0],
+        ## Covariates for event individuals as a matrix
+        Xobs_bg = matrix(as.numeric(MFPS_PNAS_SURVIVAL_DATA$treatment)[MFPS_PNAS_SURVIVAL_DATA$event_next_preg_24 == 1]),
+        ## Covariates for censored individuals as a matrix
+        Xcen_bg = matrix(as.numeric(MFPS_PNAS_SURVIVAL_DATA$treatment)[MFPS_PNAS_SURVIVAL_DATA$event_next_preg_24  == 0])
+        )
+stan_weibull_survival_model_data
+
+```
+
+```{r}
+stan_weibull_survival_model_fit <-
+    rstan::stan(file = stan_weibull_survival_model_file,
+                data = stan_weibull_survival_model_data)
+
+```
+
+```{r}
+stan_weibull_survival_model_fit
+
+```
+
+```{r}
+rstan::traceplot(stan_weibull_survival_model_fit, par = c("alpha","mu","beta_bg"))
+
+```
+
+```{r}
+
+
+```
