@@ -1,0 +1,70 @@
+---
+title: "data_exploration"
+author: "Jinghan Cui"
+date: "12/2/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(haven)
+#install.packages("rstanarm")
+
+# Remove Package
+remove.packages("rstanarm")
+
+library(rstanarm)
+library(survival)
+library(rstan)
+library(StanHeaders)
+
+remotes::install_github('stan-dev/rstanarm@feature/survival', build_vignettes = FALSE)
+
+#emotes::install_github('stan-dev/survival_2_21_3', build_vignettes = FALSE)
+
+#install.packages("rstanarm", repos = c("https://mc-stan.org/r-packages/"))
+```
+
+```{r}
+MFPS_PNAS_SURVIVAL_DATA <- read_dta("dataverse_files/MFPS_PNAS_SURVIVAL_DATA.dta")
+summary(MFPS_PNAS_SURVIVAL_DATA)
+
+```
+
+```{r}
+surv <- rstanarm::stan_surv(Surv(month_next_preg, event_next_preg_24) ~ treatment, 
+                  data = MFPS_PNAS_SURVIVAL_DATA, basehaz = "weibull", 
+                  chains = 4, seed = 1234)
+surv
+```
+```{r}
+survfit <- survreg(Surv(month_next_preg,event_next_preg_24) ~ treatment, data = MFPS_PNAS_SURVIVAL_DATA, dist = "weibull")
+summary(survfit)
+exp(0.3944)
+```
+
+
+```{r}
+install.packages("BayesSurvival")
+library(BayesSurvival)
+
+BayesSurv(
+      MFPS_PNAS_SURVIVAL_DATA,
+      time = "month_next_preg",
+      event = "event_next_preg_24",
+      prior = c("Dependent", "Independent"),
+      K = ceiling((dim(df)[1]/log(dim(df)[1]))^(1/2)),
+      time.max = max(df[[time]]),
+      alpha = 0.05,
+      N = 1000,
+      alpha.dep = 1,
+      alpha0.dep = 1.5,
+      beta0.dep = 1,
+      alpha.indep = 1.5,
+      beta.indep = 1,
+      surv.factor = 10,
+      surv.epsilon = 1e-10
+)
+
+```
+
