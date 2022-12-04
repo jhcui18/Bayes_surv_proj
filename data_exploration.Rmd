@@ -11,7 +11,7 @@ library(haven)
 #install.packages("rstanarm")
 
 # Remove Package
-remove.packages("rstanarm")
+#remove.packages("rstanarm")
 
 library(rstanarm)
 library(survival)
@@ -30,17 +30,42 @@ MFPS_PNAS_SURVIVAL_DATA <- read_dta("dataverse_files/MFPS_PNAS_SURVIVAL_DATA.dta
 summary(MFPS_PNAS_SURVIVAL_DATA)
 
 ```
+prior predictive checks
+```{r}
+CHAINS <- 4
+CORES <- 2
+ITER <- 2000
+SEED <- 1234
+
+prior.stan.const <- stan_surv(
+Surv(month_next_preg, event_next_preg_24) ~ treatment,
+data = MFPS_PNAS_SURVIVAL_DATA,
+basehaz = "exp",
+prior_PD = TRUE,
+chains = CHAINS,
+cores = CORES,
+iter = ITER,
+seed = SEED)
+
+#marginal prior distribution for the HR for treatment
+library(bayesplot)
+mcmc_intervals(prior.stan.const, pars = c("treatment","(Intercept)"))
+```
 
 ```{r}
-surv <- rstanarm::stan_surv(Surv(month_next_preg, event_next_preg_24) ~ treatment, 
+#weibull
+B_weibull <- rstanarm::stan_surv(Surv(month_next_preg, event_next_preg_24) ~ treatment, 
                   data = MFPS_PNAS_SURVIVAL_DATA, basehaz = "weibull", 
                   chains = 4, seed = 1234)
-surv
+B_weibull
+
+F_weibull <- survreg(Surv(month_next_preg,event_next_preg_24) ~ treatment, data = MFPS_PNAS_SURVIVAL_DATA, dist = "weibull")
+summary(survfit)
+
+
 ```
 ```{r}
-survfit <- survreg(Surv(month_next_preg,event_next_preg_24) ~ treatment, data = MFPS_PNAS_SURVIVAL_DATA, dist = "weibull")
-summary(survfit)
-exp(0.3944)
+
 ```
 
 
