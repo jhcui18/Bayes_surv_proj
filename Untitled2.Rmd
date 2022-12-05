@@ -134,13 +134,3 @@ rstan::traceplot(stan_weibull_survival_model_fit, par = c("alpha","mu","beta_bg"
 
 ```
 <<<<<<< HEAD
-
-```{r}
-
-=======
-Some auto-correlation is seen for the parameters of interest.
-```{r}
-bayesplot::mcmc_acf(as.matrix(stan_weibull_survival_model_fit), pars = c("alpha","mu","beta_bg[1]"))
->>>>>>> 18812f9 (weibull fit in stan-details)
-
-```
