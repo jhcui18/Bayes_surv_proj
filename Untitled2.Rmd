@@ -124,13 +124,40 @@ stan_weibull_survival_model_fit
 
 ```
 
-<<<<<<< HEAD
+
 =======
 
 The traceplots for the parameters of interest appear to indicate reasonable mixing.
->>>>>>> 18812f9 (weibull fit in stan-details)
+
 ```{r}
 rstan::traceplot(stan_weibull_survival_model_fit, par = c("alpha","mu","beta_bg"))
 
 ```
-<<<<<<< HEAD
+
+```{r}
+library(rstanarm)
+library(survival)
+library(rstan)
+library(StanHeaders)
+
+```
+
+
+```{r}
+stan_surv_exponential <- stan_surv(formula = Surv(month_next_preg,event_next_preg_24) ~treatment, data = MFPS_PNAS_SURVIVAL_DATA,basehaz = "exp")
+summary(stan_surv_exponential)
+prior_summary(stan_surv_exponential)
+
+```
+
+```{r}
+stan_surv_weibull <- stan_surv(formula = Surv(month_next_preg,event_next_preg_24) ~treatment, data = MFPS_PNAS_SURVIVAL_DATA,basehaz = "weibull")
+summary(stan_surv_weibull)
+prior_summary(stan_surv_weibull)
+```
+
+```{r}
+stan_surv_gompertz <- stan_surv(formula = Surv(month_next_preg,event_next_preg_24) ~treatment, data = MFPS_PNAS_SURVIVAL_DATA,basehaz = "gompertz")
+summary(stan_surv_gompertz )
+prior_summary(stan_surv_gompertz )
+```
