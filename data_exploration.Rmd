@@ -46,12 +46,14 @@ iter = ITER,
 seed = SEED)
 prior.stan.const
 
+prior_summary(prior.stan.const)
 #marginal prior distributions for log HR
 library(bayesplot)
 mcmc_intervals(prior.stan.const, pars = c("treatment","(Intercept)"))
 #marginal prior distribution for the HR for treatment
 mcmc_intervals(prior.stan.const, pars = c("treatment"),
 transformations = exp) + vline_at(1)
+
 #use a different prior distribution
 prior.stan.const <- update(prior.stan.const,
 prior_intercept = normal(0, 1),
@@ -61,15 +63,7 @@ mcmc_intervals(prior.stan.const, pars = c("treatment","(Intercept)"))
 #marginal prior distribution for the HR for treatment
 mcmc_intervals(prior.stan.const, pars = c("treatment"),
 transformations = exp) + vline_at(1)
-#use a different prior distribution
-prior.stan.const <- update(prior.stan.const,
-prior_intercept = normal(0, 1),
-prior = normal(0, 0.5))
-#marginal prior distributions for log HR
-mcmc_intervals(prior.stan.const, pars = c("treatment","(Intercept)"))
-#marginal prior distribution for the HR for treatment
-mcmc_intervals(prior.stan.const, pars = c("treatment"),
-transformations = exp) + vline_at(1)
+
 #a HR around 1 would be plausible for a clinical trial
 
 ```
@@ -98,6 +92,7 @@ ncol = 2
 )
 #fit a cox model
 fit.coxph <- coxph(Surv(month_next_preg, event_next_preg_24) ~ treatment,data = MFPS_PNAS_SURVIVAL_DATA, x = TRUE)
+fit.coxph
 #hazard ratio
 add_cox_hr <- vline_at(exp(coef(fit.coxph)), color = "green")
 bayesplot_grid(
@@ -116,6 +111,112 @@ grid_args = list(nrow = 2)
 
 
 ```
+#posterior distribution
+```{r}
+nd <- data.frame(treatment = c("1","0"))
+head(nd)
+ps <- posterior_survfit(fit.stan.weib,
+newdata = nd,
+times = 0,
+extrapolate = TRUE)
+head(ps)
+
+panel_labels <- c('1' = "Treatment", '0' = "Control")
+pps <- plot(ps) +
+facet_wrap(~ id, labeller = labeller(id = panel_labels))
+pps
+```
+
+
+
+# extend to different baseline ditribution
+```{r}
+# weibull model
+fit.stan.weib <- update(fit.stan.const,
+basehaz = "weibull")
+# gompertz model
+fit.stan.gomp <- update(fit.stan.const,
+basehaz = "gompertz")
+# cubic m-spline model (with df = 5)
+fit.stan.ms5 <- update(fit.stan.const, basehaz = "ms", basehaz_ops = list(df = 5))
+# cubic m-spline model (with df = 10)
+fit.stan.ms10 <- update(fit.stan.const,
+basehaz = "ms",
+basehaz_ops = list(df = 10))
+# cubic b-spline model (with df = 5)
+fit.stan.bs5 <- update(fit.stan.const,
+basehaz = "bs",
+basehaz_ops = list(df = 5))
+# cubic s-spline model (with df = 10)
+fit.stan.bs10 <- update(fit.stan.const,
+basehaz = "bs",
+basehaz_ops = list(df = 10))
+# piecewise constant model (with df = 5)
+fit.stan.pw5 <- update(fit.stan.const,
+basehaz = "ms",
+basehaz_ops = list(degree = 0, df = 5))
+# piecewise constant model (with df = 10)
+fit.stan.pw10 <- update(fit.stan.const,
+basehaz = "ms",
+basehaz_ops = list(degree = 0, df = 10))
+fits_stan <- list(
+"Constant" = fit.stan.const,
+"Weibull" = fit.stan.weib,
+"Gompertz"= fit.stan.gomp,
+"MS (df = 5)" = fit.stan.ms5,
+"MS (df = 10)" = fit.stan.ms10,
+"BS (df = 5)" = fit.stan.bs5,
+"BS (df = 10)" = fit.stan.bs10,
+"PW (df = 5)" = fit.stan.pw5,
+"PW (df = 10)" = fit.stan.pw10
+)
+
+# Comparison of estimated baseline hazards
+require("purrr")
+plots <- map(fits_stan, plot)
+bayesplot_grid(
+plots = plots,
+ylim = c(0, 0.012),
+titles = names(fits_stan),
+grid_args = list(ncol = 3))
+```
+# Assessing fit of the survival function
+```{r}
+# define helper function to add knot locations
+add_knots <- function(x) {
+knots <- x$basehaz$knots
+if (is.null(knots))
+return(NULL)
+geom_vline(xintercept = knots, color = "green", alpha = 0.5)
+}
+# generate the 'ps_check' plots
+plots <- map(fits_stan, ~ (ps_check(.) + add_knots(.)))
+# combine the plots
+bayesplot_grid(
+plots = plots,
+titles = names(fits_stan),
+grid_args = list(ncol = 3))
+```
+
+Comparison using leave-one-out cross validation
+
+```{r}
+loos <- map(fits_stan, loo)
+loo_compare(loos)
+
+```
+
+# adjusted model
+```{r}
+fit.stan.weib.aj <- update(fit.stan.weib, Surv(month_next_preg, event_next_preg_24) ~ treatment+age_group_bl+edu_primary_bl+ever_use_bl+religion_r_bl+ethnicity_r_bl)
+print(fit.stan.weib.aj, decimal=3)
+
+loo1 <- loo(fit.stan.weib)
+loo2 <- loo(fit.stan.weib.aj)
+loo_compare(loo1,loo2)
+
+```
+
 
 
 ```{r}
