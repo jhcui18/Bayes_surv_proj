@@ -139,6 +139,9 @@ library(rstanarm)
 library(survival)
 library(rstan)
 library(StanHeaders)
+library(bayesplot)
+library(ggplot2)
+
 
 ```
 
@@ -147,7 +150,7 @@ library(StanHeaders)
 stan_surv_exponential <- stan_surv(formula = Surv(month_next_preg,event_next_preg_24) ~treatment, data = MFPS_PNAS_SURVIVAL_DATA,basehaz = "exp")
 summary(stan_surv_exponential)
 prior_summary(stan_surv_exponential)
-
+plot(stan_surv_exponential)
 ```
 
 ```{r}
@@ -161,3 +164,151 @@ stan_surv_gompertz <- stan_surv(formula = Surv(month_next_preg,event_next_preg_2
 summary(stan_surv_gompertz )
 prior_summary(stan_surv_gompertz )
 ```
+
+```{r}
+stan_surv_mspline <- stan_surv(formula = Surv(month_next_preg,event_next_preg_24) ~treatment, data = MFPS_PNAS_SURVIVAL_DATA,basehaz = "ms")
+summary(stan_surv_mspline )
+prior_summary(stan_surv_mspline )
+```
+
+```{r}
+stan_surv_bspline <- stan_surv(formula = Surv(month_next_preg,event_next_preg_24) ~treatment, data = MFPS_PNAS_SURVIVAL_DATA,basehaz = "bs")
+summary(stan_surv_bspline )
+prior_summary(stan_surv_bspline )
+```
+
+```{r}
+bayesplot::bayesplot_grid(plot(stan_surv_exponential),
+                          plot(stan_surv_weibull),
+                          plot(stan_surv_gompertz),
+                    
+                          ylim = c(0, 0.012))
+```
+```{r}
+
+```
+
+# using different priors
+```{r}
+HAINS <- 4
+CORES <- 2
+ITER <- 2000
+SEED <- 1234
+
+mod_randint <- stan_surv(formula = Surv(month_next_preg,event_next_preg_24) ~treatment ,data = MFPS_PNAS_SURVIVAL_DATA,basehaz = "exp",chains = CHAINS,cores = CORES,
+seed = SEED,iter = ITER)
+mod_randint <- update(mod_randint ,
+prior_intercept = normal(0, 1),
+prior = normal(0, 0.5))
+summary(mod_randint)
+print(mod_randint, digits=2)
+```
+
+
+from the output we can see that the treatment group( the group that had improved access to family planning) have 0.39 reduced risk  of getting pregnant 
+
+
+exponential Hierchical
+```{r}
+CHAINS <- 4
+CORES <- 2
+ITER <- 2000
+SEED <- 1234
+
+mod_randint_HC <- stan_surv(formula = Surv(month_next_preg,event_next_preg_24) ~treatment + (1 | area_bl),data = MFPS_PNAS_SURVIVAL_DATA,basehaz = "exp",chains = CHAINS,cores = CORES,
+seed = SEED,iter = ITER)
+mod_randint_HC <- update(mod_randint_HC ,
+prior_intercept = normal(0, 1),
+prior = normal(0, 0.5))
+summary(mod_randint_HC)
+
+```
+The model contains a baseline covariate for treatment (0 or 1) as well as a area-specific
+intercept to allow for correlation in the event times for patients from the same areas.
+We’ve called the model object mod_randint to denote the fact that it includes a area-specific
+(random) intercept. Let’s examine the parameter estimates from the model:
+```{r}
+print(mod_randint_HC, digits=2)
+```
+We see that the estimated log hazard ratio for treatment ( beta^hat(trt) = -0.49) is about the samw as 
+the "true" log hazard ratio used in the simple model (beta^hat(trt) = -0.50).  The estimated baseline hazard rate is exp(−5.54) = 0.0039, which is almost equal to the baseline hazard rate used in simple model. 
+
+```{r}
+mod_fixed <- update(mod_randint_HC, formula = Surv(month_next_preg,event_next_preg_24) ~treatment)
+loo_fixed <- loo(mod_fixed)
+loo_randint <- loo(mod_randint_HC)
+loo_compare(loo_fixed, loo_randint)
+```
+
+weibull Hierchical
+```{r}
+CHAINS <- 4
+CORES <- 2
+ITER <- 2000
+SEED <- 1234
+
+mod_randint_HC_weibull <- stan_surv(formula = Surv(month_next_preg,event_next_preg_24) ~treatment + (1 | area_bl),data = MFPS_PNAS_SURVIVAL_DATA,basehaz = "weibull",chains = CHAINS,cores = CORES,
+seed = SEED,iter = ITER)
+mod_randint_HC_weibull <- update(mod_randint_HC_weibull ,
+prior_intercept = normal(0, 1),
+prior = normal(0, 0.5))
+summary(mod_randint_HC_weibull)
+
+```
+
+```{r}
+print(mod_randint_HC_weibull, digits=2)
+```
+
+```{r}
+mod_fixed_wei <- update(mod_randint_HC_weibull,basehaz = "weibull", formula = Surv(month_next_preg,event_next_preg_24) ~treatment)
+loo_fixed_wei <- loo(mod_fixed_wei)
+loo_randint_HC_weibull <- loo(mod_randint_HC_weibull)
+loo_compare(loo_fixed_wei, loo_randint_HC_weibull)
+```
+
+gompertz Hierchical
+```{r}
+CHAINS <- 4
+CORES <- 2
+ITER <- 2000
+SEED <- 1234
+
+mod_randint_HC_gom <- stan_surv(formula = Surv(month_next_preg,event_next_preg_24) ~treatment + (1 | area_bl),data = MFPS_PNAS_SURVIVAL_DATA,basehaz = "gompertz",chains = CHAINS,cores = CORES,
+seed = SEED,iter = ITER)
+mod_randint_HC_gom <- update(mod_randint_HC_gom ,
+prior_intercept = normal(0, 1),
+prior = normal(0, 0.5))
+summary(mod_randint_HC_gom)
+
+```
+
+```{r}
+print(mod_randint_HC_gom, digits=2)
+```
+
+```{r}
+mod_fixed_gom <- update(mod_randint_HC_gom, formula = Surv(month_next_preg,event_next_preg_24) ~treatment)
+loo_fixed_gom <- loo(mod_fixed_gom)
+loo_randint_HC_gom <- loo(mod_randint_HC_gom)
+loo_compare(loo_fixed, loo_randint,loo_fixed_wei, loo_randint_HC_weibull,loo_fixed_gom, loo_randint_HC_gom)
+```
+
+
+
+```{r}
+aj_HC_weibull <- stan_surv(formula = Surv(month_next_preg,event_next_preg_24) ~treatment+age_group_bl+edu_primary_bl+ever_use_bl+religion_r_bl+ethnicity_r_bl + (1 | area_bl),data = MFPS_PNAS_SURVIVAL_DATA,basehaz = "weibull",chains = CHAINS,cores = CORES,
+seed = SEED,iter = ITER)
+aj_HC_weibull <- update(aj_HC_weibull ,
+prior_intercept = normal(0, 1),
+prior = normal(0, 0.5))
+summary(aj_HC_weibull)
+print(aj_HC_weibull, decimal=3)
+
+```
+```{r}
+loo_randint_HC_weibull <- loo(mod_randint_HC_weibull)
+loo_aj_HC_weibull <- loo(aj_HC_weibull)
+loo_compare(loo_randint_HC_weibull,loo_aj_HC_weibull)
+```
+
