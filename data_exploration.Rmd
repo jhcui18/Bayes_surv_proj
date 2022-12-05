@@ -18,11 +18,8 @@ library(survival)
 library(rstan)
 library(StanHeaders)
 
-remotes::install_github('stan-dev/rstanarm@feature/survival', build_vignettes = FALSE)
+#remotes::install_github('stan-dev/rstanarm@feature/survival', build_vignettes = FALSE)
 
-#emotes::install_github('stan-dev/survival_2_21_3', build_vignettes = FALSE)
-
-#install.packages("rstanarm", repos = c("https://mc-stan.org/r-packages/"))
 ```
 
 ```{r}
@@ -36,7 +33,8 @@ CHAINS <- 4
 CORES <- 2
 ITER <- 2000
 SEED <- 1234
-
+#exponential proportional hazard function that has a constant baseline hazard.
+#Setting the prior_PD argument equal to TRUE ensures that we do not condition on the outcome data and instead draw samples only from the prior distributions.
 prior.stan.const <- stan_surv(
 Surv(month_next_preg, event_next_preg_24) ~ treatment,
 data = MFPS_PNAS_SURVIVAL_DATA,
@@ -46,11 +44,79 @@ chains = CHAINS,
 cores = CORES,
 iter = ITER,
 seed = SEED)
+prior.stan.const
 
-#marginal prior distribution for the HR for treatment
+#marginal prior distributions for log HR
 library(bayesplot)
 mcmc_intervals(prior.stan.const, pars = c("treatment","(Intercept)"))
+#marginal prior distribution for the HR for treatment
+mcmc_intervals(prior.stan.const, pars = c("treatment"),
+transformations = exp) + vline_at(1)
+#use a different prior distribution
+prior.stan.const <- update(prior.stan.const,
+prior_intercept = normal(0, 1),
+prior = normal(0, 0.5))
+#marginal prior distributions for log HR
+mcmc_intervals(prior.stan.const, pars = c("treatment","(Intercept)"))
+#marginal prior distribution for the HR for treatment
+mcmc_intervals(prior.stan.const, pars = c("treatment"),
+transformations = exp) + vline_at(1)
+#use a different prior distribution
+prior.stan.const <- update(prior.stan.const,
+prior_intercept = normal(0, 1),
+prior = normal(0, 0.5))
+#marginal prior distributions for log HR
+mcmc_intervals(prior.stan.const, pars = c("treatment","(Intercept)"))
+#marginal prior distribution for the HR for treatment
+mcmc_intervals(prior.stan.const, pars = c("treatment"),
+transformations = exp) + vline_at(1)
+#a HR around 1 would be plausible for a clinical trial
+
 ```
+# Model estimation
+```{r}
+fit.stan.const <- update(prior.stan.const, prior_PD = FALSE)
+print(fit.stan.const,digits=3)
+#MAD_SD: a measure of the standard deviation of the marginal posterior distribution of the treatment effect. it is based on a scaling of the Median Absolute Deviation (MAD) from the posterior median of the treatment effect.
+```
+#Prior vs posterior checks
+
+```{r}
+require("cowplot")
+#intercept and log hazard ratio
+plot_grid(
+bayesplot_grid(mcmc_intervals(prior.stan.const),
+mcmc_intervals(fit.stan.const),
+titles = c("Prior", "Posterior"),
+xlim = c(-5, 1),
+grid_args = list(nrow = 2)),
+bayesplot_grid(mcmc_hist(prior.stan.const),
+mcmc_hist(fit.stan.const),
+titles = c("Prior", "Posterior"),
+grid_args = list(nrow = 2)),
+ncol = 2
+)
+#fit a cox model
+fit.coxph <- coxph(Surv(month_next_preg, event_next_preg_24) ~ treatment,data = MFPS_PNAS_SURVIVAL_DATA, x = TRUE)
+#hazard ratio
+add_cox_hr <- vline_at(exp(coef(fit.coxph)), color = "green")
+bayesplot_grid(
+mcmc_hist(prior.stan.const,
+pars = c("treatment"),
+transformations = exp,
+binwidth = 0.05) + add_cox_hr,
+mcmc_hist(fit.stan.const,
+pars = c("treatment"),
+transformations = exp,
+binwidth = 0.05) + add_cox_hr,
+titles = c("Prior", "Posterior"),
+xlim = c(0, 3),
+grid_args = list(nrow = 2)
+)
+
+
+```
+
 
 ```{r}
 #weibull
@@ -92,4 +158,5 @@ BayesSurv(
 )
 
 ```
+
 
