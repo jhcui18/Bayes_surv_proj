@@ -306,9 +306,26 @@ summary(aj_HC_weibull)
 print(aj_HC_weibull, decimal=3)
 
 ```
+
 ```{r}
 loo_randint_HC_weibull <- loo(mod_randint_HC_weibull)
 loo_aj_HC_weibull <- loo(aj_HC_weibull)
 loo_compare(loo_randint_HC_weibull,loo_aj_HC_weibull)
+```
+
+ As we can see in the output the adjusted model is worse
+ 
+ 
+ 
+ #trying the area-specific intercept and a area-specific coefficient for
+the covariate treatment
+
+```{r}
+mod_randtrt <- update(mod_randint_HC_weibull, formula. = Surv(month_next_preg,event_next_preg_24) ~treatment + (treatment | area_bl))
+```
+
+```{r}
+print(mod_randtrt )
+
 ```
 
