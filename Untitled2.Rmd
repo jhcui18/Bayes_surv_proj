@@ -39,21 +39,24 @@ sapply(MFPS_PNAS_SURVIVAL_DATA, function(x) sum(is.na (x)))
 ###To use the correct file directory, replace "C:/Users/mvkarra/Documents/Harvard 2015-2016/POP CENTER/MALAWI FP INTERVENTION/Publications/YEAR 1 ITT ON CONTRACEPTIVE USE/SUBMISSIONS/PNAS/HARVARD DATAVERSE SUBMISSION" with the appropriate file path under which your data is stored.
 ###Make sure that the Results subfolder is created to store the results from this analysis.
 ###SET WORKING DIRECTORY
-getwd()
 
 
-install.packages(c("ggplot2","haven","survminer","survival"))
+
+#install.packages(c("ggplot2","haven","survminer","survival"))
 library(ggplot2)
 library(haven)
 library("survminer")
 require("survival")
-
-MFPS_PNAS_SURVIVAL_DATA <- read_dta("MFPS_PNAS_SURVIVAL_DATA.dta")
-View(MFPS_PNAS_SURVIVAL_DATA)
+ library(xtable)
+library(tidyverse)
+#MFPS_PNAS_SURVIVAL_DATA <- read_dta("MFPS_PNAS_SURVIVAL_DATA.dta")
+#View(MFPS_PNAS_SURVIVAL_DATA)
 
 fit <- survfit(Surv(month_next_preg,event_next_preg_24) ~ treatment, data = MFPS_PNAS_SURVIVAL_DATA)
 ggsurvplot(fit, data = MFPS_PNAS_SURVIVAL_DATA, pval = TRUE)
 
+fit_cox <- coxph(Surv(month_next_preg,event_next_preg_24) ~ treatment, data = MFPS_PNAS_SURVIVAL_DATA)%>% 
+  broom::tidy(exp = TRUE)
 
 ###K-M PLOT
 ggsurvplot(
