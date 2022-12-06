@@ -57,7 +57,8 @@ ggsurvplot(fit, data = MFPS_PNAS_SURVIVAL_DATA, pval = TRUE)
 
 fit_cox <- coxph(Surv(month_next_preg,event_next_preg_24) ~ treatment, data = MFPS_PNAS_SURVIVAL_DATA)%>% 
   broom::tidy(exp = TRUE)
-
+aft.fit <- survreg(Surv(month_next_preg,event_next_preg_24) ~ treatment, dist="weibull", data = MFPS_PNAS_SURVIVAL_DATA)%>% 
+  broom::tidy(exp = TRUE)
 ###K-M PLOT
 ggsurvplot(
   fit, 
