@@ -73,6 +73,7 @@ fit.stan.const <- update(prior.stan.const, prior_PD = FALSE)
 print(fit.stan.const,digits=3)
 #MAD_SD: a measure of the standard deviation of the marginal posterior distribution of the treatment effect. it is based on a scaling of the Median Absolute Deviation (MAD) from the posterior median of the treatment effect.
 ```
+
 #Prior vs posterior checks
 
 ```{r}
@@ -111,8 +112,6 @@ grid_args = list(nrow = 2)
 
 
 ```
-
-
 
 
 # extend to different baseline ditribution
@@ -224,45 +223,6 @@ loo_compare(loo1,loo2)
 
 
 
-```{r}
-#weibull
-B_weibull <- rstanarm::stan_surv(Surv(month_next_preg, event_next_preg_24) ~ treatment, 
-                  data = MFPS_PNAS_SURVIVAL_DATA, basehaz = "weibull", 
-                  chains = 4, seed = 1234)
-B_weibull
 
-F_weibull <- survreg(Surv(month_next_preg,event_next_preg_24) ~ treatment, data = MFPS_PNAS_SURVIVAL_DATA, dist = "weibull")
-summary(survfit)
-
-
-```
-```{r}
-
-```
-
-
-```{r}
-install.packages("BayesSurvival")
-library(BayesSurvival)
-
-BayesSurv(
-      MFPS_PNAS_SURVIVAL_DATA,
-      time = "month_next_preg",
-      event = "event_next_preg_24",
-      prior = c("Dependent", "Independent"),
-      K = ceiling((dim(df)[1]/log(dim(df)[1]))^(1/2)),
-      time.max = max(df[[time]]),
-      alpha = 0.05,
-      N = 1000,
-      alpha.dep = 1,
-      alpha0.dep = 1.5,
-      beta0.dep = 1,
-      alpha.indep = 1.5,
-      beta.indep = 1,
-      surv.factor = 10,
-      surv.epsilon = 1e-10
-)
-
-```
 
 
