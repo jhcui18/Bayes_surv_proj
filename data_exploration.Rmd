@@ -82,7 +82,7 @@ plot_grid(
 bayesplot_grid(mcmc_intervals(prior.stan.const),
 mcmc_intervals(fit.stan.const),
 titles = c("Prior", "Posterior"),
-xlim = c(-5, 1),
+xlim = c(-8, 1),
 grid_args = list(nrow = 2)),
 bayesplot_grid(mcmc_hist(prior.stan.const),
 mcmc_hist(fit.stan.const),
@@ -111,21 +111,7 @@ grid_args = list(nrow = 2)
 
 
 ```
-#posterior distribution
-```{r}
-nd <- data.frame(treatment = c("1","0"))
-head(nd)
-ps <- posterior_survfit(fit.stan.weib,
-newdata = nd,
-times = 0,
-extrapolate = TRUE)
-head(ps)
 
-panel_labels <- c('1' = "Treatment", '0' = "Control")
-pps <- plot(ps) +
-facet_wrap(~ id, labeller = labeller(id = panel_labels))
-pps
-```
 
 
 
@@ -180,6 +166,23 @@ ylim = c(0, 0.012),
 titles = names(fits_stan),
 grid_args = list(ncol = 3))
 ```
+
+#posterior distribution
+```{r}
+nd <- data.frame(treatment = c("Treatment","Control"))
+head(nd)
+ps <- posterior_survfit(fit.stan.weib,
+newdata = nd,
+times = 0,
+extrapolate = TRUE)
+head(ps)
+
+panel_labels <- c('1' = "Treatment", '2' = "Control")
+pps <- plot(ps) +
+facet_wrap(~ id, labeller = labeller(id = panel_labels))
+pps
+```
+
 # Assessing fit of the survival function
 ```{r}
 # define helper function to add knot locations
@@ -190,12 +193,14 @@ return(NULL)
 geom_vline(xintercept = knots, color = "green", alpha = 0.5)
 }
 # generate the 'ps_check' plots
-plots <- map(fits_stan, ~ (ps_check(.) + add_knots(.)))
+plots <- map(fits_stan, ~ (ps_check(.) + add_knots(.) + ggplot2::ylim(0.5,1)))
 # combine the plots
 bayesplot_grid(
 plots = plots,
 titles = names(fits_stan),
 grid_args = list(ncol = 3))
+
+test <- posterior_survfit(fit.stan.weib,draw=1)
 ```
 
 Comparison using leave-one-out cross validation
