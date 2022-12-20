@@ -420,3 +420,4 @@ loo_aj_HC_gompertz <- loo(aj_HC_gompertz)
 loo_compare(loo_randint_HC_weibull,loo_aj_HC_weibull,loo_randint_HC_gompertz,loo_aj_HC_gompertz)
 ```
  As we can see in the output the adjusted model is worse
+ 
