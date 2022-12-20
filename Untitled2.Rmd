@@ -79,64 +79,7 @@ ggsurvplot(
 
 ```
 
-Stan Weibull fit
 
-```{r}
-stan_weibull_survival_model_file <- system.file('stan', 'weibull_survival_model.stan', package =  'biostan')
-biostan::print_stan_file(stan_weibull_survival_model_file)
-
-```
-From the data block, observations where events were observed and censored are handled separately. 
-```{r}
-
-stan_weibull_survival_model_code <- biostan::read_stan_file(stan_weibull_survival_model_file)
-biostan::print_stan_code(stan_weibull_survival_model_code, section = "data")
-
-```
-
-```{r}
-stan_weibull_survival_model_data <-
-    list(
-        ## Number of event individuals
-        Nobs = sum(MFPS_PNAS_SURVIVAL_DATA$event_next_preg_24 == 1),
-        ## Number of censored individuals
-        Ncen = sum(MFPS_PNAS_SURVIVAL_DATA$event_next_preg_24 == 0),
-        ## Number of covariates
-        M_bg = 1,
-        ## Times for event individuals
-        yobs = MFPS_PNAS_SURVIVAL_DATA$month_next_preg[MFPS_PNAS_SURVIVAL_DATA$event_next_preg_24 == 1],
-        ## Times for censored individuals
-        ycen = MFPS_PNAS_SURVIVAL_DATA$month_next_preg[MFPS_PNAS_SURVIVAL_DATA$event_next_preg_24 == 0],
-        ## Covariates for event individuals as a matrix
-        Xobs_bg = matrix(as.numeric(MFPS_PNAS_SURVIVAL_DATA$treatment)[MFPS_PNAS_SURVIVAL_DATA$event_next_preg_24 == 1]),
-        ## Covariates for censored individuals as a matrix
-        Xcen_bg = matrix(as.numeric(MFPS_PNAS_SURVIVAL_DATA$treatment)[MFPS_PNAS_SURVIVAL_DATA$event_next_preg_24  == 0])
-        )
-stan_weibull_survival_model_data
-
-```
-
-```{r}
-stan_weibull_survival_model_fit <-
-    rstan::stan(file = stan_weibull_survival_model_file,
-                data = stan_weibull_survival_model_data)
-
-```
-
-```{r}
-stan_weibull_survival_model_fit
-
-```
-
-
-=======
-
-The traceplots for the parameters of interest appear to indicate reasonable mixing.
-
-```{r}
-rstan::traceplot(stan_weibull_survival_model_fit, par = c("alpha","mu","beta_bg"))
-
-```
 
 ```{r}
 library(rstanarm)
@@ -194,12 +137,12 @@ bayesplot::bayesplot_grid(plot(stan_surv_exponential),
 
 # using different priors
 ```{r}
-HAINS <- 4
+CHAINS <- 4
 CORES <- 2
 ITER <- 2000
 SEED <- 1234
 
-mod_randint <- stan_surv(formula = Surv(month_next_preg,event_next_preg_24) ~treatment ,data = MFPS_PNAS_SURVIVAL_DATA,basehaz = "exp",chains = CHAINS,cores = CORES,
+mod_randint <- stan_surv(formula = Surv(month_next_preg,event_next_preg_24) ~treatment ,data = MFPS_PNAS_SURVIVAL_DATA,basehaz = "gompertz",chains = CHAINS,cores = CORES,
 seed = SEED,iter = ITER)
 mod_randint <- update(mod_randint ,
 prior_intercept = normal(0, 1),
@@ -317,19 +260,25 @@ loo_aj_HC_weibull <- loo(aj_HC_weibull)
 loo_compare(loo_randint_HC_weibull,loo_aj_HC_weibull)
 ```
 
+```{r}
+aj_HC_gompertz<- stan_surv(formula = Surv(month_next_preg,event_next_preg_24) ~treatment+age_group_bl+edu_primary_bl+ever_use_bl+religion_r_bl+ethnicity_r_bl + (1 | area_bl),data = MFPS_PNAS_SURVIVAL_DATA,basehaz = "gompertz",chains = CHAINS,cores = CORES,
+seed = SEED,iter = ITER)
+aj_HC_weibull <- update(aj_HC_gompertz ,
+prior_intercept = normal(0, 1),
+prior = normal(0, 0.5))
+summary(aj_HC_gompertz)
+print(aj_HC_gompertz, decimal=3)
+
+```
+
+```{r}
+loo_randint_HC_gompertz <- loo(mod_randint_HC_gom)
+loo_aj_HC_gompertz <- loo(aj_HC_gompertz)
+loo_compare(loo_randint_HC_weibull,loo_aj_HC_weibull,loo_randint_HC_gompertz,loo_aj_HC_gompertz)
+```
+
+ 
+ 
  As we can see in the output the adjusted model is worse
  
  
- 
- #trying the area-specific intercept and a area-specific coefficient for
-the covariate treatment
-
-```{r}
-mod_randtrt <- update(mod_randint_HC_weibull, formula. = Surv(month_next_preg,event_next_preg_24) ~treatment + (treatment | area_bl))
-```
-
-```{r}
-print(mod_randtrt )
-
-```
-
