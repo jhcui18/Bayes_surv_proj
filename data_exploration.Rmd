@@ -298,7 +298,7 @@ bayesplot::bayesplot_grid(plot(stan_surv_exponential),
 
 
 
-exponential Hierchical
+# exponential Hierchical
 ```{r}
 CHAINS <- 4
 CORES <- 2
@@ -313,15 +313,12 @@ prior = normal(0, 0.5))
 summary(mod_randint_HC)
 
 ```
-The model contains a baseline covariate for treatment (0 or 1) as well as a area-specific
-intercept to allow for correlation in the event times for patients from the same areas.
-We’ve called the model object mod_randint to denote the fact that it includes a area-specific
-(random) intercept. Let’s examine the parameter estimates from the model:
+The model contains a baseline covariate for treatment (0 or 1) as well as a area-specific intercept to allow for correlation in the event times for patients from the same areas.
+We’ve called the model object mod_randint to denote the fact that it includes a area-specific (random) intercept. Let’s examine the parameter estimates from the model:
 ```{r}
 print(mod_randint_HC, digits=2)
 ```
-We see that the estimated log hazard ratio for treatment ( beta^hat(trt) = -0.49) is about the samw as 
-the "true" log hazard ratio used in the simple model (beta^hat(trt) = -0.50).  The estimated baseline hazard rate is exp(−5.54) = 0.0039, which is almost equal to the baseline hazard rate used in simple model. 
+We see that the estimated log hazard ratio for treatment ( beta^hat(trt) = -0.49) is about the samw as the "true" log hazard ratio used in the simple model (beta^hat(trt) = -0.50).  The estimated baseline hazard rate is exp(−5.54) = 0.0039, which is almost equal to the baseline hazard rate used in simple model. 
 
 ```{r}
 mod_fixed <- update(mod_randint_HC, formula = Surv(month_next_preg,event_next_preg_24) ~treatment)
@@ -330,7 +327,7 @@ loo_randint <- loo(mod_randint_HC)
 loo_compare(loo_fixed, loo_randint)
 ```
 
-weibull Hierchical
+# weibull Hierchical
 ```{r}
 CHAINS <- 4
 CORES <- 2
@@ -357,7 +354,7 @@ loo_randint_HC_weibull <- loo(mod_randint_HC_weibull)
 loo_compare(loo_fixed_wei, loo_randint_HC_weibull)
 ```
 
-gompertz Hierchical
+# gompertz Hierchical
 ```{r}
 CHAINS <- 4
 CORES <- 2
@@ -384,7 +381,7 @@ loo_randint_HC_gom <- loo(mod_randint_HC_gom)
 loo_compare(loo_fixed, loo_randint,loo_fixed_wei, loo_randint_HC_weibull,loo_fixed_gom, loo_randint_HC_gom)
 ```
 
-
+#adjusted model 
 
 ```{r}
 aj_HC_weibull <- stan_surv(formula = Surv(month_next_preg,event_next_preg_24) ~treatment+age_group_bl+edu_primary_bl+ever_use_bl+religion_r_bl+ethnicity_r_bl + (1 | area_bl),data = MFPS_PNAS_SURVIVAL_DATA,basehaz = "weibull",chains = CHAINS,cores = CORES,
