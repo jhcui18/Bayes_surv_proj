@@ -29,3 +29,5 @@ $M_d$ denotes the survival model
 
 $\theta_d = \{\alpha_d,\beta_d\}$
 scacka
+
+We see that the estimated log hazard ratio for treatment $\hat\beta_{trt} = -0.49)$ is about the same as the "true" log hazard ratio used in the simple model $\hat\beta_{trt} = -0.50)$.  The estimated baseline hazard rate is $e^{−5.54} = 0.0039$, which is almost equal to the baseline hazard rate used in simple model. 
